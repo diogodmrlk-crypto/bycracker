@@ -62,11 +62,11 @@ export default function AdminUsers() {
     e.preventDefault();
     if (!newUsername || !newPassword) return;
 
-    if (newPassword.length < 6) {
+    if (newPassword.length < 3) {
       toast({
         variant: "destructive",
         title: "Senha Curta",
-        description: "A senha deve ter no mínimo 6 caracteres por segurança do Firebase."
+        description: "A senha deve ter no mínimo 3 caracteres."
       });
       return;
     }
@@ -269,7 +269,7 @@ export default function AdminUsers() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 pl-12 text-sm font-bold focus:border-primary outline-none transition-all"
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder="Mínimo 3 caracteres"
                   required
                 />
               </div>
