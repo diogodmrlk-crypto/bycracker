@@ -62,8 +62,25 @@ function DashboardContent() {
       lastUpdate: new Date().toISOString()
     }, { merge: true });
     
-    setActiveModule(null);
+    // Pequeno delay para o usuário ver o "sucesso" antes de fechar
+    setTimeout(() => {
+      setActiveModule(null);
+    }, 100);
   }, [activeModule, userDocRef, userData, user?.username]);
+
+  const handleLogout = useCallback(() => {
+    if (userDocRef) {
+      // Desativa todos os módulos antes de sair
+      setDocumentNonBlocking(userDocRef, {
+        removerTremedeiraActive: false,
+        estabilizarMiraActive: false,
+        sensiSemCongelamentoActive: false,
+        cleanActive: false,
+        lastUpdate: new Date().toISOString()
+      }, { merge: true });
+    }
+    logout();
+  }, [userDocRef, logout]);
 
   const openFreeFire = () => {
     window.location.href = 'freefire://';
@@ -130,7 +147,7 @@ function DashboardContent() {
             </div>
           )}
           <button 
-            onClick={logout}
+            onClick={handleLogout}
             className="p-2.5 text-red-400/80 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
           >
             <LogOut className="w-5 h-5" />
