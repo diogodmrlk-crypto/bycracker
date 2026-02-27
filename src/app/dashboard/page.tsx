@@ -1,9 +1,8 @@
-
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { useAuth, AuthProvider } from '@/hooks/use-auth';
-import { HackerBackground } from '@/components/HackerBackground';
 import { ModuleCard } from '@/components/ModuleCard';
 import { TerminalOverlay } from '@/components/TerminalOverlay';
 import { GlowButton } from '@/components/GlowButton';
@@ -23,13 +22,17 @@ import { useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking } from '@
 import { doc } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 
+// Importação dinâmica para evitar erro de hidratação
+const HackerBackground = dynamic(() => import('@/components/HackerBackground').then(mod => mod.HackerBackground), { 
+  ssr: false 
+});
+
 function DashboardContent() {
   const { user, logout, loading: authLoading } = useAuth();
   const router = useRouter();
   const firestore = useFirestore();
   const [activeModule, setActiveModule] = useState<string | null>(null);
 
-  // Memoize document reference based on authenticated UID
   const userDocRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
     return doc(firestore, 'users', user.uid);
@@ -37,7 +40,6 @@ function DashboardContent() {
 
   const { data: userData, isLoading: isDocLoading } = useDoc<any>(userDocRef);
 
-  // Effect for secure redirection
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/');
@@ -91,7 +93,6 @@ function DashboardContent() {
     }, 1500);
   };
 
-  // Explicit loading state to prevent client-side exceptions
   if (authLoading || (user && isDocLoading && !userData)) {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-center">

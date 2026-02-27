@@ -1,10 +1,9 @@
-
 "use client";
 
 import React, { useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { useAuth, AuthProvider } from '@/hooks/use-auth';
 import { useRouter, usePathname } from 'next/navigation';
-import { HackerBackground } from '@/components/HackerBackground';
 import { 
   Users, 
   LayoutDashboard, 
@@ -19,6 +18,11 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+
+// Importação dinâmica para evitar erro de hidratação
+const HackerBackground = dynamic(() => import('@/components/HackerBackground').then(mod => mod.HackerBackground), { 
+  ssr: false 
+});
 
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const { user, logout, loading } = useAuth();

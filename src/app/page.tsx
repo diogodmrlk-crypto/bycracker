@@ -1,7 +1,7 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { useAuth, AuthProvider } from '@/hooks/use-auth';
 import { GlowButton } from '@/components/GlowButton';
 import { Input } from '@/components/ui/input';
@@ -9,9 +9,13 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Toaster } from '@/components/ui/toaster';
 import { useRouter } from 'next/navigation';
-import { Loader2, User, Lock, ShieldCheck, ShieldAlert } from 'lucide-react';
-import { HackerBackground } from '@/components/HackerBackground';
+import { Loader2, User, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+// Importação dinâmica para evitar erro de hidratação
+const HackerBackground = dynamic(() => import('@/components/HackerBackground').then(mod => mod.HackerBackground), { 
+  ssr: false 
+});
 
 function LoginContent() {
   const [username, setUsername] = useState('');
