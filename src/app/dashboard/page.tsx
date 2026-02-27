@@ -1,6 +1,7 @@
+
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth, AuthProvider } from '@/hooks/use-auth';
 import { HackerBackground } from '@/components/HackerBackground';
 import { ModuleCard } from '@/components/ModuleCard';
@@ -8,7 +9,6 @@ import { TerminalOverlay } from '@/components/TerminalOverlay';
 import { GlowButton } from '@/components/GlowButton';
 import { 
   LogOut, 
-  LayoutGrid, 
   Target, 
   Zap, 
   Rocket, 
@@ -41,32 +41,29 @@ function DashboardContent() {
     }
   }, [user, authLoading, router]);
 
-  const handleToggle = (moduleKey: string) => {
+  const handleToggle = useCallback((moduleKey: string) => {
     if (!userDocRef) return;
     setActiveModule(moduleKey);
-  };
+  }, [userDocRef]);
 
-  const onAnimationComplete = () => {
+  const onAnimationComplete = useCallback(() => {
     if (!activeModule || !userDocRef) {
       setActiveModule(null);
       return;
     }
     
     const fieldName = `${activeModule}Active`;
-    // If userData doesn't exist yet, we default to false (activating it)
     const currentStatus = userData ? !!userData[fieldName] : false;
     const newStatus = !currentStatus;
     
-    // Using setDocumentNonBlocking with merge: true ensures the doc is created if it doesn't exist
     setDocumentNonBlocking(userDocRef, {
       [fieldName]: newStatus,
       username: user?.username || 'unknown',
       lastUpdate: new Date().toISOString()
     }, { merge: true });
     
-    // Crucially: always clear activeModule to close the TerminalOverlay
     setActiveModule(null);
-  };
+  }, [activeModule, userDocRef, userData, user?.username]);
 
   const openFreeFire = () => {
     window.location.href = 'freefire://';
@@ -205,7 +202,7 @@ function DashboardContent() {
             onClick={openFreeFire}
             className="w-full flex items-center justify-center gap-3 py-5 text-lg rounded-3xl bg-secondary text-secondary-foreground border-none shadow-[0_0_20px_rgba(172,228,255,0.2)] hover:shadow-[0_0_30px_rgba(172,228,255,0.4)]"
           >
-            <LayoutGrid className="w-6 h-6" />
+            <Activity className="w-6 h-6" />
             ABRIR FREE FIRE
           </GlowButton>
         </div>

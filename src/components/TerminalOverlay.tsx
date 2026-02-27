@@ -1,6 +1,7 @@
+
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -13,6 +14,7 @@ interface TerminalOverlayProps {
 export function TerminalOverlay({ isOpen, onComplete, isDeactivating }: TerminalOverlayProps) {
   const [lines, setLines] = useState<string[]>([]);
   const [isFinished, setIsFinished] = useState(false);
+  const completedRef = useRef(false);
 
   const activationScripts = [
     "Iniciando módulo...",
@@ -35,6 +37,7 @@ export function TerminalOverlay({ isOpen, onComplete, isDeactivating }: Terminal
     if (isOpen) {
       setLines([]);
       setIsFinished(false);
+      completedRef.current = false;
       
       let index = 0;
       const interval = setInterval(() => {
@@ -43,27 +46,29 @@ export function TerminalOverlay({ isOpen, onComplete, isDeactivating }: Terminal
           index++;
         } else {
           clearInterval(interval);
-          // Pequeno delay antes de mostrar o status final
           setTimeout(() => {
             setIsFinished(true);
-            // Delay curto de sucesso antes de fechar automaticamente
             setTimeout(() => {
-              onComplete();
+              if (!completedRef.current) {
+                completedRef.current = true;
+                onComplete();
+              }
             }, 800);
           }, 400);
         }
-      }, 400); // Velocidade levemente aumentada para melhor UX
+      }, 400);
 
-      return () => clearInterval(interval);
+      return () => {
+        clearInterval(interval);
+      };
     }
-  }, [isOpen, isDeactivating, onComplete, scripts]);
+  }, [isOpen, isDeactivating, scripts, onComplete]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-xl p-6 transition-all duration-500">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-xl p-6">
       <div className="w-full max-w-md bg-[#0d0c0d] border border-primary/40 rounded-[2rem] p-8 font-mono text-sm shadow-[0_0_50px_rgba(196,76,255,0.15)] relative overflow-hidden">
-        {/* Glow de fundo no terminal */}
         <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/10 blur-[80px] rounded-full" />
         
         <div className="flex gap-2 mb-6">
