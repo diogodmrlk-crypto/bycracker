@@ -57,9 +57,9 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const menuItems = [
     { label: 'Dashboard', icon: <LayoutDashboard size={20} />, href: '/admin' },
     { label: 'Usuários', icon: <Users size={20} />, href: '/admin/users' },
-    { label: 'Licenças', icon: <Key size={20} />, href: '/admin/licenses' },
+    { label: 'Licenças', icon: <Key size={20} />, href: '/admin/licenca' },
     { label: 'Logs', icon: <History size={20} />, href: '/admin/logs' },
-    { label: 'Configurações', icon: <Settings size={20} />, href: '/admin/settings' },
+    { label: 'Configurações', icon: <Settings size={20} />, href: '/admin/configuracao' },
   ];
 
   return (
