@@ -2,29 +2,27 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    /**
-     * HEADTRICK KIZARU - SECURITY RULES CONFIGURATION
-     * 
-     * Atualizado para permitir acesso de leitura/escrita aos perfis
-     * se o usuário estiver autenticado (mesmo que anonimamente)
-     * para facilitar o uso do login bypass kizaru/171.
-     */
-
+    
     function isSignedIn() {
       return request.auth != null;
     }
 
+    function isAdmin() {
+      return isSignedIn() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
     match /users/{userId} {
-      // Permite leitura e escrita se o usuário estiver logado.
-      // Em produção, userId deveria ser igual a request.auth.uid.
-      allow get, update: if isSignedIn();
-      
-      // Regra para criação inicial do documento (ex: administrador criando novo usuário)
-      allow create: if isSignedIn();
-      
-      // Proíbe listagem pública para evitar raspagem de dados
-      allow list: if false;
+      // Usuários comuns acessam seu próprio perfil. Admins acessam tudo.
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow create, delete: if isAdmin();
+      allow list: if isAdmin() || (isSignedIn() && request.query.limit <= 1);
+    }
+
+    match /system/config {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
 
     match /{path=**} {

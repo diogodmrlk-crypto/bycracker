@@ -1,62 +1,40 @@
+
 {
   "entities": {
     "User": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
       "type": "object",
-      "description": "Represents a user account within the Headtrick Kizaru application, storing authentication-related attributes (excluding password) and the activation status of various modules.",
+      "description": "Entidade de usuário expandida para incluir controle administrativo e licenciamento.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the User entity."
-        },
-        "username": {
-          "type": "string",
-          "description": "The unique username used by the user for logging into the application."
-        },
-        "isActive": {
-          "type": "boolean",
-          "description": "Indicates whether the user's account is currently active (true) or deactivated (false). Deactivated accounts are blocked from logging in."
-        },
-        "creationTimestamp": {
-          "type": "string",
-          "description": "The timestamp when the user account was created.",
-          "format": "date-time"
-        },
-        "removerTremedeiraActive": {
-          "type": "boolean",
-          "description": "Indicates if the 'Remover Tremedeira' module is currently active for this user."
-        },
-        "estabilizarMiraActive": {
-          "type": "boolean",
-          "description": "Indicates if the 'Estabilizar Mira' module is currently active for this user."
-        },
-        "sensiSemCongelamentoActive": {
-          "type": "boolean",
-          "description": "Indicates if the 'Sensi Sem Congelamento' module is currently active for this user."
-        },
-        "cleanActive": {
-          "type": "boolean",
-          "description": "Indicates if the 'Clean' module is currently active for this user."
-        }
+        "id": { "type": "string" },
+        "username": { "type": "string" },
+        "password": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "user"] },
+        "isActive": { "type": "boolean" },
+        "creationTimestamp": { "type": "string", "format": "date-time" },
+        "lastLogin": { "type": "string", "format": "date-time" },
+        "expirationDate": { "type": "string", "format": "date-time" },
+        "planType": { "type": "string", "enum": ["basic", "premium", "lifetime"] },
+        "removerTremedeiraActive": { "type": "boolean" },
+        "estabilizarMiraActive": { "type": "boolean" },
+        "sensiSemCongelamentoActive": { "type": "boolean" },
+        "cleanActive": { "type": "boolean" },
+        "forceLogout": { "type": "boolean" }
       },
-      "required": [
-        "id",
-        "username",
-        "isActive",
-        "creationTimestamp",
-        "removerTremedeiraActive",
-        "estabilizarMiraActive",
-        "sensiSemCongelamentoActive",
-        "cleanActive"
-      ]
+      "required": ["id", "username", "role", "isActive"]
+    },
+    "Settings": {
+      "title": "Settings",
+      "type": "object",
+      "properties": {
+        "maintenanceMode": { "type": "boolean" },
+        "globalAnnouncement": { "type": "string" }
+      }
     }
   },
   "auth": {
-    "providers": [
-      "password",
-      "anonymous"
-    ]
+    "providers": ["password", "anonymous"]
   },
   "firestore": {
     "structure": [
@@ -64,19 +42,18 @@
         "path": "/users/{userId}",
         "definition": {
           "entityName": "User",
-          "schema": {
-            "$ref": "#/backend/entities/User"
-          },
-          "description": "Stores individual user profiles and their associated module activation states. The document ID corresponds to the Firebase Authentication UID. Includes denormalized module activation flags for authorization independence and an 'isActive' flag for DBAC.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique Firebase Authentication ID (UID) of the user."
-            }
-          ]
+          "schema": { "$ref": "#/backend/entities/User" },
+          "description": "Documentos de usuário com campos de autorização e role."
+        }
+      },
+      {
+        "path": "/system/config",
+        "definition": {
+          "entityName": "Settings",
+          "schema": { "$ref": "#/backend/entities/Settings" },
+          "description": "Configurações globais do sistema."
         }
       }
-    ],
-    "reasoning": "The recommended Firestore structure utilizes a single top-level collection, `/users`, where each document ID is the unique Firebase Authentication User ID (UID). This structure directly aligns with the core design principles by ensuring robust security, scalability, and debuggability.\n\n**Authorization Independence:** This structure achieves Authorization Independence by explicitly storing all user-specific data, including the module activation states (`removerTremedeiraActive`, `estabilizarMiraActive`, etc.), directly within each user's document at `/users/{userId}`. This eliminates the need for any cross-document `get()` calls in security rules. When a user attempts to read or update their settings, all necessary authorization context is available within their single user document. The authorization rule `allow read, write: if request.auth.uid == userId;` is self-contained, atomic, and does not depend on data from other documents or parent collections.\n\n**QAPs (Queries as a Policy):** The structure inherently supports QAPs. For instance, to retrieve a user's settings, the application will issue a query like `db.collection('users').doc(request.auth.uid).get()`. This query explicitly targets a single document using the authenticated user's UID. The corresponding Firestore security rule `match /users/{userId} { allow read, write: if request.auth.uid == userId; }` perfectly validates this request. Since `request.auth.uid` must match the `userId` in the path, the rule effectively acts as a filter on the path itself, ensuring that the user can only access their own data and preventing broader, unindexed `list` operations that could violate QAPs. The application's current features do not require listing all users, further simplifying security to focused, QAP-compliant access patterns.\n\n**Structural Segregation & Access Modeling:** All documents within the `/users` collection share a homogeneous security posture: private ownership. Each user document is accessible only by its owner (identified by `request.auth.uid`). This adherence to path-based ownership (`/users/{userId}`) is a secure and simple access model. The `isActive` field within the user document serves as a direct Database Authorization Check (DBAC), controlling login access without relying on custom claims, further enhancing clarity and debuggability. All authorization data is consistently located and accessed, making rule writing straightforward and predictable."
+    ]
   }
 }

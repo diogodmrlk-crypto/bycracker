@@ -2,19 +2,21 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, doc, getDoc, setDoc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { getAuth, signInAnonymously } from 'firebase/auth';
 
-interface User {
+interface UserSession {
   username: string;
+  role: 'admin' | 'user';
   ativo: boolean;
+  uid: string;
 }
 
 interface AuthContextType {
-  user: User | null;
-  login: (username: string, password: string) => Promise<{ success: boolean; message: string }>;
+  user: UserSession | null;
+  login: (username: string, password: string) => Promise<{ success: boolean; message: string; role?: string }>;
   logout: () => void;
   loading: boolean;
 }
@@ -22,7 +24,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserSession | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const db = useFirestore();
@@ -31,8 +33,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const savedUser = localStorage.getItem('hk_session');
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
-      // Garante que o Firebase Auth esteja ativo se houver sessão salva
+      const parsed = JSON.parse(savedUser);
+      setUser(parsed);
       if (!auth.currentUser) {
         signInAnonymously(auth).catch(console.error);
       }
@@ -42,15 +44,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (username: string, password: string) => {
     try {
-      // Inicia sessão anônima no Firebase para satisfazer as regras de segurança
       await signInAnonymously(auth);
 
-      // Bypass para o administrador kizaru
+      // Bypass Admin Principal
+      if (username === 'kizarudono' && password === '171') {
+        const adminSession: UserSession = { 
+          username: 'kizarudono', 
+          role: 'admin', 
+          ativo: true,
+          uid: 'admin_fixed'
+        };
+        setUser(adminSession);
+        localStorage.setItem('hk_session', JSON.stringify(adminSession));
+        return { success: true, message: 'Admin autorizado.', role: 'admin' };
+      }
+
+      // Bypass Legacy Admin
       if (username === 'kizaru' && password === '171') {
-        const userSession = { username: 'kizaru', ativo: true };
-        setUser(userSession);
-        localStorage.setItem('hk_session', JSON.stringify(userSession));
-        return { success: true, message: 'Login de administrador realizado com sucesso.' };
+        const adminSession: UserSession = { 
+          username: 'kizaru', 
+          role: 'admin', 
+          ativo: true,
+          uid: 'kizaru_legacy'
+        };
+        setUser(adminSession);
+        localStorage.setItem('hk_session', JSON.stringify(adminSession));
+        return { success: true, message: 'Admin legado autorizado.', role: 'admin' };
       }
 
       const usersRef = collection(db, 'users');
@@ -63,22 +82,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const userData = querySnapshot.docs[0].data();
 
-      // Verificação simples de senha
       if (userData.password !== password) {
         return { success: false, message: 'Senha incorreta.' };
       }
 
       if (userData.isActive === false) {
-        return { success: false, message: 'Sua licença foi desativada.' };
+        return { success: false, message: 'Licença desativada.' };
       }
 
-      const userSession = { username: userData.username, ativo: userData.isActive };
+      const userSession: UserSession = { 
+        username: userData.username, 
+        role: userData.role || 'user', 
+        ativo: userData.isActive,
+        uid: querySnapshot.docs[0].id
+      };
+      
       setUser(userSession);
       localStorage.setItem('hk_session', JSON.stringify(userSession));
-      return { success: true, message: 'Login realizado com sucesso.' };
+      return { success: true, message: 'Login realizado.', role: userSession.role };
     } catch (error: any) {
       console.error("Auth Error:", error);
-      return { success: false, message: 'Erro ao conectar ao servidor.' };
+      return { success: false, message: 'Erro de conexão.' };
     }
   };
 
