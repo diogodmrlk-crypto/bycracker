@@ -1,9 +1,11 @@
+
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { useRouter } from 'next/navigation';
+import { getAuth, signInAnonymously } from 'firebase/auth';
 
 interface User {
   username: string;
@@ -24,25 +26,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const db = useFirestore();
+  const auth = getAuth();
 
   useEffect(() => {
     const savedUser = localStorage.getItem('hk_session');
     if (savedUser) {
       setUser(JSON.parse(savedUser));
+      // Garante que o Firebase Auth esteja ativo se houver sessão salva
+      if (!auth.currentUser) {
+        signInAnonymously(auth).catch(console.error);
+      }
     }
     setLoading(false);
-  }, []);
+  }, [auth]);
 
   const login = async (username: string, password: string) => {
-    // Bypass para o administrador kizaru
-    if (username === 'kizaru' && password === '171') {
-      const userSession = { username: 'kizaru', ativo: true };
-      setUser(userSession);
-      localStorage.setItem('hk_session', JSON.stringify(userSession));
-      return { success: true, message: 'Login de administrador realizado com sucesso.' };
-    }
-
     try {
+      // Inicia sessão anônima no Firebase para satisfazer as regras de segurança
+      await signInAnonymously(auth);
+
+      // Bypass para o administrador kizaru
+      if (username === 'kizaru' && password === '171') {
+        const userSession = { username: 'kizaru', ativo: true };
+        setUser(userSession);
+        localStorage.setItem('hk_session', JSON.stringify(userSession));
+        return { success: true, message: 'Login de administrador realizado com sucesso.' };
+      }
+
       const usersRef = collection(db, 'users');
       const q = query(usersRef, where('username', '==', username), limit(1));
       const querySnapshot = await getDocs(q);
@@ -53,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const userData = querySnapshot.docs[0].data();
 
-      // Verificação simples de senha (em produção usar Firebase Auth ou hash)
+      // Verificação simples de senha
       if (userData.password !== password) {
         return { success: false, message: 'Senha incorreta.' };
       }
@@ -66,15 +76,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(userSession);
       localStorage.setItem('hk_session', JSON.stringify(userSession));
       return { success: true, message: 'Login realizado com sucesso.' };
-    } catch (error) {
+    } catch (error: any) {
       console.error("Auth Error:", error);
-      return { success: false, message: 'Ocorreu um erro ao tentar entrar.' };
+      return { success: false, message: 'Erro ao conectar ao servidor.' };
     }
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem('hk_session');
+    auth.signOut();
     router.push('/');
   };
 
