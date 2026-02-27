@@ -2,10 +2,26 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { collection, query, where, getDocs, limit, doc, getDoc, setDoc } from 'firebase/firestore';
+import { 
+  collection, 
+  query, 
+  where, 
+  getDocs, 
+  limit, 
+  doc, 
+  getDoc, 
+  setDoc,
+  serverTimestamp 
+} from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { getAuth, signInAnonymously } from 'firebase/auth';
+import { 
+  getAuth, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signOut
+} from 'firebase/auth';
 
 interface UserSession {
   username: string;
@@ -31,85 +47,92 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const auth = getAuth();
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('hk_session');
-    if (savedUser) {
-      const parsed = JSON.parse(savedUser);
-      setUser(parsed);
-      if (!auth.currentUser) {
-        signInAnonymously(auth).catch(console.error);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        // Se houver um usuário no Auth, buscamos os dados dele no Firestore pelo UID
+        const userRef = doc(db, 'users', firebaseUser.uid);
+        const userSnap = await getDoc(userRef);
+        
+        if (userSnap.exists()) {
+          const data = userSnap.data();
+          const session: UserSession = {
+            username: data.username,
+            role: data.role,
+            ativo: data.isActive,
+            uid: firebaseUser.uid
+          };
+          setUser(session);
+          localStorage.setItem('hk_session', JSON.stringify(session));
+        } else {
+          // Caso especial: Admin Bypass sem documento (vamos criar se for o caso)
+          // Mas pela regra nova, o documento DEVE existir.
+          const savedSession = localStorage.getItem('hk_session');
+          if (savedSession) {
+            setUser(JSON.parse(savedSession));
+          }
+        }
+      } else {
+        setUser(null);
+        localStorage.removeItem('hk_session');
       }
-    }
-    setLoading(false);
-  }, [auth]);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [auth, db]);
 
   const login = async (username: string, password: string) => {
     try {
-      await signInAnonymously(auth);
-
-      // Bypass Admin Principal
-      if (username === 'kizarudono' && password === '171') {
-        const adminSession: UserSession = { 
-          username: 'kizarudono', 
-          role: 'admin', 
-          ativo: true,
-          uid: 'admin_fixed'
-        };
-        setUser(adminSession);
-        localStorage.setItem('hk_session', JSON.stringify(adminSession));
-        return { success: true, message: 'Admin autorizado.', role: 'admin' };
-      }
-
-      // Bypass Legacy Admin
-      if (username === 'kizaru' && password === '171') {
-        const adminSession: UserSession = { 
-          username: 'kizaru', 
-          role: 'admin', 
-          ativo: true,
-          uid: 'kizaru_legacy'
-        };
-        setUser(adminSession);
-        localStorage.setItem('hk_session', JSON.stringify(adminSession));
-        return { success: true, message: 'Admin legado autorizado.', role: 'admin' };
-      }
-
-      const usersRef = collection(db, 'users');
-      const q = query(usersRef, where('username', '==', username), limit(1));
-      const querySnapshot = await getDocs(q);
-
-      if (querySnapshot.empty) {
-        return { success: false, message: 'Usuário não encontrado.' };
-      }
-
-      const userData = querySnapshot.docs[0].data();
-
-      if (userData.password !== password) {
-        return { success: false, message: 'Senha incorreta.' };
-      }
-
-      if (userData.isActive === false) {
-        return { success: false, message: 'Licença desativada.' };
-      }
-
-      const userSession: UserSession = { 
-        username: userData.username, 
-        role: userData.role || 'user', 
-        ativo: userData.isActive,
-        uid: querySnapshot.docs[0].id
-      };
+      const email = `${username.toLowerCase()}@kizaru.ffz`;
       
-      setUser(userSession);
-      localStorage.setItem('hk_session', JSON.stringify(userSession));
-      return { success: true, message: 'Login realizado.', role: userSession.role };
+      // Tentativa de login no Firebase Auth
+      let authResult;
+      try {
+        authResult = await signInWithEmailAndPassword(auth, email, password);
+      } catch (e: any) {
+        // Se for o admin principal e não existir, tentamos criar (Bootstrap)
+        if ((username === 'kizarudono' && password === '171') || (username === 'kizaru' && password === '171')) {
+          try {
+            authResult = await createUserWithEmailAndPassword(auth, email, password);
+            // Criar documento do admin no Firestore com o UID
+            await setDoc(doc(db, 'users', authResult.user.uid), {
+              username: username,
+              role: 'admin',
+              isActive: true,
+              createdAt: serverTimestamp()
+            });
+          } catch (createErr) {
+            return { success: false, message: 'Erro ao inicializar admin.' };
+          }
+        } else {
+          return { success: false, message: 'Credenciais inválidas ou usuário inexistente.' };
+        }
+      }
+
+      const uid = authResult.user.uid;
+      const userRef = doc(db, 'users', uid);
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        return { success: false, message: 'Perfil não configurado no banco de dados.' };
+      }
+
+      const userData = userSnap.data();
+      if (!userData.isActive) {
+        await signOut(auth);
+        return { success: false, message: 'Sua licença está desativada.' };
+      }
+
+      return { success: true, message: 'Acesso autorizado.', role: userData.role };
     } catch (error: any) {
       console.error("Auth Error:", error);
-      return { success: false, message: 'Erro de conexão.' };
+      return { success: false, message: 'Erro crítico na autenticação.' };
     }
   };
 
   const logout = () => {
+    signOut(auth);
     setUser(null);
-    localStorage.removeItem('hk_session');
-    auth.signOut();
     router.push('/');
   };
 

@@ -28,11 +28,11 @@ function DashboardContent() {
   const firestore = useFirestore();
   const [activeModule, setActiveModule] = useState<string | null>(null);
 
-  // Sync with Firestore using the username as the document ID
+  // CRITICAL FIX: Use user.uid instead of username to match security rules
   const userDocRef = useMemoFirebase(() => {
-    if (!firestore || !user?.username) return null;
-    return doc(firestore, 'users', user.username);
-  }, [firestore, user]);
+    if (!firestore || !user?.uid) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user?.uid]);
 
   const { data: userData, isLoading: isDocLoading } = useDoc<any>(userDocRef);
 
@@ -57,22 +57,19 @@ function DashboardContent() {
     const currentStatus = userData ? !!userData[fieldName] : false;
     const newStatus = !currentStatus;
     
-    // Non-blocking update to Firestore
+    // Non-blocking update to Firestore using UID path
     setDocumentNonBlocking(userDocRef, {
       [fieldName]: newStatus,
-      username: user?.username || 'unknown',
       lastUpdate: new Date().toISOString()
     }, { merge: true });
     
-    // Delay visualization for a moment after success before closing
     setTimeout(() => {
       setActiveModule(null);
     }, 100);
-  }, [activeModule, userDocRef, userData, user?.username]);
+  }, [activeModule, userDocRef, userData]);
 
   const handleLogout = useCallback(() => {
     if (userDocRef) {
-      // Deactivate all modules before logout
       setDocumentNonBlocking(userDocRef, {
         removerTremedeiraActive: false,
         estabilizarMiraActive: false,
@@ -129,14 +126,15 @@ function DashboardContent() {
     <div className="min-h-screen flex flex-col relative">
       <HackerBackground />
 
-      {/* Header */}
       <header className="h-20 px-6 flex items-center justify-between sticky top-0 bg-black/20 backdrop-blur-xl border-b border-white/5 z-40">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-black italic shadow-lg shadow-primary/20">
             H
           </div>
           <div>
-            <p className="text-[10px] uppercase font-black text-primary/60 tracking-widest leading-none mb-1">Usuário Premium</p>
+            <p className="text-[10px] uppercase font-black text-primary/60 tracking-widest leading-none mb-1">
+              {user.role === 'admin' ? 'Super Admin' : 'Usuário Premium'}
+            </p>
             <p className="text-sm font-bold truncate max-w-[120px]">{user.username}</p>
           </div>
         </div>
@@ -157,10 +155,7 @@ function DashboardContent() {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="flex-1 p-6 space-y-8 max-w-2xl mx-auto w-full pb-32">
-        
-        {/* Engine Status Hero */}
         <section className="glass-card p-6 rounded-[2.5rem] relative overflow-hidden">
           <div className="absolute top-0 right-0 p-8 opacity-10">
             <Cpu className="w-24 h-24 text-primary" />
@@ -200,7 +195,6 @@ function DashboardContent() {
           </div>
         </section>
 
-        {/* Action Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {modules.map((m) => (
             <ModuleCard
@@ -215,7 +209,6 @@ function DashboardContent() {
           ))}
         </div>
 
-        {/* Updated Action Button */}
         <div className="pt-4">
           <GlowButton 
             onClick={openFreeFire}

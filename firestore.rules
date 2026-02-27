@@ -13,11 +13,11 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // Usuários comuns acessam seu próprio perfil. Admins acessam tudo.
-      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      // Usuários acessam apenas seu próprio UID. Admins acessam todos.
+      allow get, update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       allow create, delete: if isAdmin();
-      allow list: if isAdmin() || (isSignedIn() && request.query.limit <= 1);
+      // Apenas admins podem listar todos os usuários.
+      allow list: if isAdmin();
     }
 
     match /system/config {
