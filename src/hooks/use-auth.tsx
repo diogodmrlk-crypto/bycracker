@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { useFirestore } from '@/firebase';
 import { useRouter } from 'next/navigation';
 
 interface User {
@@ -23,6 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const db = useFirestore();
 
   useEffect(() => {
     const savedUser = localStorage.getItem('hk_session');
@@ -52,20 +53,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const userData = querySnapshot.docs[0].data();
 
+      // Verificação simples de senha (em produção usar Firebase Auth ou hash)
       if (userData.password !== password) {
         return { success: false, message: 'Senha incorreta.' };
       }
 
-      if (userData.ativo === false) {
+      if (userData.isActive === false) {
         return { success: false, message: 'Sua licença foi desativada.' };
       }
 
-      const userSession = { username: userData.username, ativo: userData.ativo };
+      const userSession = { username: userData.username, ativo: userData.isActive };
       setUser(userSession);
       localStorage.setItem('hk_session', JSON.stringify(userSession));
       return { success: true, message: 'Login realizado com sucesso.' };
     } catch (error) {
-      console.error(error);
+      console.error("Auth Error:", error);
       return { success: false, message: 'Ocorreu um erro ao tentar entrar.' };
     }
   };

@@ -13,28 +13,23 @@ import {
   Zap, 
   Rocket, 
   Trash2, 
-  ShieldCheck,
   Cpu,
   Activity
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useFirestore, useDoc, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
+import { cn } from '@/lib/utils';
 
 function DashboardContent() {
   const { user, logout, loading: authLoading } = useAuth();
   const router = useRouter();
   const firestore = useFirestore();
   const [activeModule, setActiveModule] = useState<string | null>(null);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Sync with Firestore
   const userDocRef = useMemoFirebase(() => {
     if (!firestore || !user?.username) return null;
-    // O id no backend.json é o userId, mas como o login custom usa username,
-    // vamos assumir que o documento do usuário é identificado pelo username ou id se disponível.
-    // Para alinhar com o use-auth, usaremos o username como chave se não houver uid real.
-    // Nota: Em um sistema real, usaríamos o uid do Firebase Auth.
     return doc(firestore, 'users', user.username);
   }, [firestore, user]);
 
@@ -46,20 +41,17 @@ function DashboardContent() {
     }
   }, [user, authLoading, router]);
 
-  const handleToggle = (moduleKey: string, currentStatus: boolean) => {
+  const handleToggle = (moduleKey: string) => {
     if (!userDocRef) return;
-    
     setActiveModule(moduleKey);
-    
-    // O TerminalOverlay será disparado pelo estado do activeModule
-    // Após a animação, atualizamos o Firestore.
   };
 
   const onAnimationComplete = () => {
     if (!activeModule || !userDocRef || !userData) return;
     
     const fieldName = `${activeModule}Active`;
-    const newStatus = !userData[fieldName];
+    const currentStatus = !!userData[fieldName];
+    const newStatus = !currentStatus;
     
     updateDocumentNonBlocking(userDocRef, {
       [fieldName]: newStatus
@@ -193,7 +185,7 @@ function DashboardContent() {
               description={m.description}
               icon={m.icon}
               isActive={!!userData?.[`${m.id}Active`]}
-              onToggle={() => handleToggle(m.id, !!userData?.[`${m.id}Active`])}
+              onToggle={() => handleToggle(m.id)}
               isLoading={isDocLoading}
             />
           ))}
@@ -210,17 +202,6 @@ function DashboardContent() {
           </GlowButton>
         </div>
       </main>
-
-      {/* Footer Branding */}
-      <footer className="p-10 text-center">
-        <div className="flex items-center justify-center gap-2 mb-3">
-          <ShieldCheck className="w-4 h-4 text-primary/60" />
-          <span className="text-[10px] text-primary/60 font-black uppercase tracking-[0.4em]">Secure Connection</span>
-        </div>
-        <p className="text-[10px] text-muted-foreground/40 uppercase tracking-[0.2em] font-medium">
-          Headtrick Kizaru v2.0.0 Premium Edition
-        </p>
-      </footer>
 
       <TerminalOverlay 
         isOpen={!!activeModule} 
