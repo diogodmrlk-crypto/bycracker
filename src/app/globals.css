@@ -23,7 +23,7 @@
     --border: 285 10% 15%;
     --input: 285 10% 15%;
     --ring: 285 100% 65%;
-    --radius: 1rem;
+    --radius: 1.5rem;
   }
 }
 
@@ -37,21 +37,51 @@
 }
 
 .glass-card {
-  @apply bg-card/40 backdrop-blur-xl border border-white/5;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  @apply bg-card/30 backdrop-blur-2xl border border-white/10;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.neon-border-animated {
+  position: relative;
+}
+
+.neon-border-animated::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(45deg, transparent, hsla(285, 100%, 65%, 1), transparent, hsla(285, 100%, 65%, 1), transparent);
+  background-size: 400% 400%;
+  z-index: -1;
+  border-radius: inherit;
+  animation: neon-flow 8s linear infinite;
+  opacity: 0.5;
+}
+
+@keyframes neon-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 .neon-glow-purple {
   box-shadow: 0 0 15px hsla(285, 100%, 65%, 0.3), 0 0 30px hsla(285, 100%, 65%, 0.1);
 }
 
-.neon-glow-active {
-  box-shadow: 0 0 20px hsla(285, 100%, 65%, 0.6), inset 0 0 10px hsla(285, 100%, 65%, 0.2);
-  @apply border-primary/50;
+.neon-text-purple {
+  text-shadow: 0 0 10px hsla(285, 100%, 65%, 0.8), 0 0 20px hsla(285, 100%, 65%, 0.4);
 }
 
-.neon-text-purple {
-  text-shadow: 0 0 10px hsla(285, 100%, 65%, 0.8);
+@keyframes glitch {
+  0% { transform: translate(0); clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
+  20% { transform: translate(-2px, 1px); clip-path: polygon(0 15%, 100% 15%, 100% 30%, 0 30%); }
+  40% { transform: translate(2px, -1px); clip-path: polygon(0 60%, 100% 60%, 100% 75%, 0 75%); }
+  60% { transform: translate(-1px, 2px); clip-path: polygon(0 40%, 100% 40%, 100% 55%, 0 55%); }
+  80% { transform: translate(1px, -2px); clip-path: polygon(0 80%, 100% 80%, 100% 95%, 0 95%); }
+  100% { transform: translate(0); clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
+}
+
+.animate-glitch {
+  animation: glitch 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
 }
 
 @keyframes scanline {
@@ -87,6 +117,5 @@
   animation: pulse-soft 3s ease-in-out infinite;
 }
 
-/* Hide scrollbar */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
