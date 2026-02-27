@@ -91,19 +91,27 @@ function DashboardContent() {
     const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
     const isAndroid = /android/i.test(userAgent);
     const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream;
-    const isMobile = isAndroid || isIOS;
 
-    if (isMobile) {
-      // Protocolo universal para tentar abrir o app
-      const start = Date.now();
+    if (isIOS) {
+      // Protocolo Deep Link para iOS
       window.location.href = 'freefire://';
       
-      // Fallback caso o app não esteja instalado ou não abra em 2.5s
+      // Fallback para App Store se o app não abrir em 2 segundos
       setTimeout(() => {
-        if (Date.now() - start < 3000) {
-          window.location.href = 'https://ff.garena.com/pt/';
+        if (document.hasFocus()) {
+          window.location.href = 'https://apps.apple.com/app/id1209268363';
         }
-      }, 2500);
+      }, 2000);
+    } else if (isAndroid) {
+      // Protocolo Deep Link para Android
+      window.location.href = 'freefire://';
+      
+      // Fallback para Play Store se o app não abrir em 2 segundos
+      setTimeout(() => {
+        if (document.hasFocus()) {
+          window.location.href = 'https://play.google.com/store/apps/details?id=com.dts.freefireth';
+        }
+      }, 2000);
     } else {
       // Desktop: Abre o site oficial em nova aba
       window.open('https://ff.garena.com/pt/', '_blank');
