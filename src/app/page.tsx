@@ -76,54 +76,53 @@ function LoginContent() {
     <div className="min-h-screen flex flex-col items-center justify-center p-6 relative">
       <HackerBackground />
       
-      <div className="w-full max-w-md space-y-8 relative z-10">
-        {/* Título com Glitch */}
-        <div className="text-center space-y-1 mb-12">
-          <h1 className="text-4xl sm:text-5xl font-black tracking-tighter italic text-primary neon-text-purple animate-glitch">
+      <div className="w-full max-w-md space-y-10 relative z-10">
+        {/* Título com Glitch e Neon */}
+        <div className="text-center space-y-2">
+          <h1 className="text-4xl sm:text-6xl font-black tracking-tighter italic text-primary neon-text-purple animate-glitch">
             HEADTRICK KIZARU
           </h1>
-          <p className="text-primary/60 text-[10px] sm:text-xs font-black tracking-[0.4em] uppercase">
+          <p className="text-primary/70 text-[10px] sm:text-xs font-black tracking-[0.5em] uppercase opacity-80">
             PERFORMANCE PREMIUM
           </p>
         </div>
 
-        {/* Card de Login Glassmorphism */}
-        <div className="glass-card neon-border-animated p-8 sm:p-10 rounded-[2.5rem] relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-            <ShieldCheck className="w-24 h-24 text-primary" />
-          </div>
-
-          <form onSubmit={handleLogin} className="space-y-6 relative z-10">
-            <div className="space-y-4">
+        {/* Card de Login Glassmorphism 3.0 */}
+        <div className="glass-card neon-border-animated p-8 sm:p-12 rounded-[2.5rem] relative overflow-hidden group">
+          {/* Efeito de Reflexo Interno */}
+          <div className="absolute -top-[50%] -left-[50%] w-[200%] h-[200%] bg-gradient-to-br from-white/5 to-transparent rotate-45 pointer-events-none group-hover:translate-x-4 group-hover:translate-y-4 transition-transform duration-1000" />
+          
+          <form onSubmit={handleLogin} className="space-y-8 relative z-10">
+            <div className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="username" className="text-[10px] uppercase tracking-widest text-primary/70 font-black ml-1">
-                  Identificação do Usuário
+                <Label htmlFor="username" className="text-[10px] uppercase tracking-widest text-primary/80 font-black ml-1">
+                  Identificação Hacker
                 </Label>
-                <div className="relative group">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/40 group-focus-within:text-primary transition-colors" />
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/40" />
                   <Input
                     id="username"
-                    placeholder="Seu usuário premium"
+                    placeholder="Usuário Premium"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="bg-black/40 border-primary/20 focus:border-primary focus:ring-primary/20 h-14 pl-12 rounded-2xl transition-all duration-300"
+                    className="bg-black/40 border-primary/20 focus:border-primary focus:ring-primary/20 h-14 pl-12 rounded-2xl transition-all duration-500 placeholder:text-white/10"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" title="Password" className="text-[10px] uppercase tracking-widest text-primary/70 font-black ml-1">
+                <Label htmlFor="password" title="Password" className="text-[10px] uppercase tracking-widest text-primary/80 font-black ml-1">
                   Código de Acesso
                 </Label>
-                <div className="relative group">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/40 group-focus-within:text-primary transition-colors" />
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/40" />
                   <Input
                     id="password"
                     type="password"
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="bg-black/40 border-primary/20 focus:border-primary focus:ring-primary/20 h-14 pl-12 rounded-2xl transition-all duration-300"
+                    className="bg-black/40 border-primary/20 focus:border-primary focus:ring-primary/20 h-14 pl-12 rounded-2xl transition-all duration-500 placeholder:text-white/10"
                   />
                 </div>
               </div>
@@ -132,9 +131,9 @@ function LoginContent() {
             <GlowButton 
               type="submit" 
               className={cn(
-                "w-full text-sm font-black tracking-widest h-14 rounded-2xl transition-all duration-500 uppercase italic",
+                "w-full text-sm font-black tracking-[0.2em] h-16 rounded-2xl transition-all duration-500 uppercase italic",
                 loginStatus === 'success' ? "bg-green-500 shadow-green-500/50" : 
-                loginStatus === 'error' ? "bg-red-500 shadow-red-500/50" : ""
+                loginStatus === 'error' ? "bg-red-500 shadow-red-500/50" : "bg-primary shadow-primary/20"
               )}
               disabled={isLoading || loginStatus === 'success'}
             >
@@ -157,18 +156,18 @@ function LoginContent() {
             </GlowButton>
           </form>
 
-          {/* Rodapé Interno do Card */}
-          <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-between">
+          {/* Rodapé do Card */}
+          <div className="mt-10 pt-8 border-t border-white/5 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest">Servidores Online</span>
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+              <span className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em]">Servidores Ativos</span>
             </div>
-            <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest">v2.0 Premium</span>
+            <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.2em]">Kizaru v3.0</span>
           </div>
         </div>
 
-        <p className="text-center text-[10px] text-muted-foreground/40 font-bold tracking-[0.2em] uppercase">
-          © 2024 Headtrick Kizaru Team • Advanced Security
+        <p className="text-center text-[10px] text-muted-foreground/30 font-bold tracking-[0.3em] uppercase">
+          © 2024 Headtrick Kizaru • Encryption Level 5
         </p>
       </div>
       <Toaster />
