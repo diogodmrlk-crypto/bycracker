@@ -86,8 +86,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Tenta o login normal
         authResult = await signInWithEmailAndPassword(auth, email, password);
       } catch (e: any) {
-        // Se for o admin mestre e não existir, cria ele
-        if (username.toLowerCase() === 'kizarudono' && password === '171') {
+        // Se for o admin mestre e não existir, cria ele com a nova senha 052006
+        if (username.toLowerCase() === 'kizarudono' && password === '052006') {
           try {
             authResult = await createUserWithEmailAndPassword(auth, email, password);
             // Cria o documento no Firestore IMEDIATAMENTE para evitar erro de permissão no onAuthStateChanged
