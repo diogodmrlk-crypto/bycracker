@@ -1,7 +1,6 @@
-
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -11,58 +10,65 @@ interface TerminalOverlayProps {
   isDeactivating?: boolean;
 }
 
+const ACTIVATION_SCRIPTS = [
+  "Iniciando módulo...",
+  "Acessando kernel do sistema...",
+  "Aplicando parâmetros de performance...",
+  "Otimizando latência de entrada...",
+  "Injetando configurações premium...",
+];
+
+const DEACTIVATION_SCRIPTS = [
+  "Desativando módulo...",
+  "Limpando cache de kernel...",
+  "Restaurando parâmetros padrão...",
+  "Finalizando processos...",
+];
+
 export function TerminalOverlay({ isOpen, onComplete, isDeactivating }: TerminalOverlayProps) {
   const [lines, setLines] = useState<string[]>([]);
   const [isFinished, setIsFinished] = useState(false);
-  const completedRef = useRef(false);
+  const processStartedRef = useRef(false);
 
-  const activationScripts = [
-    "Iniciando módulo...",
-    "Acessando kernel do sistema...",
-    "Aplicando parâmetros de performance...",
-    "Otimizando latência de entrada...",
-    "Injetando configurações premium...",
-  ];
-
-  const deactivationScripts = [
-    "Desativando módulo...",
-    "Limpando cache de kernel...",
-    "Restaurando parâmetros padrão...",
-    "Finalizando processos...",
-  ];
-
-  const scripts = isDeactivating ? deactivationScripts : activationScripts;
+  // Memoize scripts to prevent effect re-triggering
+  const scripts = useMemo(() => 
+    isDeactivating ? DEACTIVATION_SCRIPTS : ACTIVATION_SCRIPTS, 
+  [isDeactivating]);
 
   useEffect(() => {
-    if (isOpen) {
+    // Reset state when overlay closes
+    if (!isOpen) {
       setLines([]);
       setIsFinished(false);
-      completedRef.current = false;
-      
-      let index = 0;
-      const interval = setInterval(() => {
-        if (index < scripts.length) {
-          setLines(prev => [...prev, scripts[index]]);
-          index++;
-        } else {
-          clearInterval(interval);
-          setTimeout(() => {
-            setIsFinished(true);
-            setTimeout(() => {
-              if (!completedRef.current) {
-                completedRef.current = true;
-                onComplete();
-              }
-            }, 800);
-          }, 400);
-        }
-      }, 400);
-
-      return () => {
-        clearInterval(interval);
-      };
+      processStartedRef.current = false;
+      return;
     }
-  }, [isOpen, isDeactivating, scripts, onComplete]);
+
+    // Prevent multiple executions for the same opening
+    if (processStartedRef.current) return;
+    processStartedRef.current = true;
+
+    let currentIndex = 0;
+    const interval = setInterval(() => {
+      if (currentIndex < scripts.length) {
+        setLines(prev => [...prev, scripts[currentIndex]]);
+        currentIndex++;
+      } else {
+        clearInterval(interval);
+        setTimeout(() => {
+          setIsFinished(true);
+          // Wait a bit before calling onComplete to show the success message
+          setTimeout(() => {
+            onComplete();
+          }, 1000);
+        }, 500);
+      }
+    }, 400);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [isOpen, scripts, onComplete]);
 
   if (!isOpen) return null;
 
