@@ -32,12 +32,23 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function AdminUsers() {
   const db = useFirestore();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Form state
@@ -113,16 +124,19 @@ export default function AdminUsers() {
     });
   };
 
-  const deleteUser = (user: any) => {
-    if (confirm(`Atenção: Excluir perfil de ${user.username}? (O login no sistema continuará existindo, use o botão de Bloqueio para impedir o acesso).`)) {
-      const userRef = doc(db, 'users', user.id);
-      deleteDocumentNonBlocking(userRef);
-      toast({
-        title: "Perfil Removido",
-        description: "Documento excluído. Use o status de 'Bloqueado' para impedir novos acessos.",
-        variant: "destructive"
-      });
-    }
+  const confirmDelete = () => {
+    if (!userToDelete) return;
+    
+    const userRef = doc(db, 'users', userToDelete.id);
+    deleteDocumentNonBlocking(userRef);
+    
+    toast({
+      title: "Usuário Excluído",
+      description: `O perfil de ${userToDelete.username} foi removido permanentemente do banco.`,
+      variant: "destructive"
+    });
+    
+    setUserToDelete(null);
   };
 
   return (
@@ -200,11 +214,11 @@ export default function AdminUsers() {
                   <td className="px-8 py-6 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <button 
-                        onClick={() => deleteUser(user)}
-                        title="Remover perfil do banco"
-                        className="p-2 text-muted-foreground hover:text-red-400 hover:bg-red-400/10 rounded-xl transition-all"
+                        onClick={() => setUserToDelete(user)}
+                        title="Remover permanentemente"
+                        className="p-3 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all border border-transparent hover:border-red-500/20"
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={18} />
                       </button>
                     </div>
                   </td>
@@ -221,6 +235,7 @@ export default function AdminUsers() {
         </div>
       </div>
 
+      {/* Modal Criar Usuário */}
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
         <DialogContent className="bg-black/90 border-primary/20 backdrop-blur-xl rounded-[2.5rem] p-8">
           <DialogHeader>
@@ -288,6 +303,35 @@ export default function AdminUsers() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Alerta de Exclusão */}
+      <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
+        <AlertDialogContent className="bg-black/95 border-red-500/20 backdrop-blur-xl rounded-[2.5rem] p-8">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-black italic uppercase tracking-tighter text-red-500 flex items-center gap-3">
+              <AlertTriangle className="w-6 h-6" />
+              Confirmar Exclusão
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground font-medium pt-2">
+              Você está prestes a remover o perfil de <span className="text-white font-bold">{userToDelete?.username}</span>. 
+              Isso revogará o acesso imediatamente e apagará todos os dados deste usuário no banco.
+              <br/><br/>
+              <span className="text-[10px] uppercase font-black text-red-400/60 tracking-widest">Esta ação é irreversível.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="pt-6 gap-4">
+            <AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest rounded-2xl py-6">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-red-500 hover:bg-red-600 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl py-6 shadow-lg shadow-red-500/20"
+            >
+              Excluir Permanentemente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Toaster />
     </div>
