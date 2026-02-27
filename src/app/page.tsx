@@ -100,6 +100,7 @@ function LoginContent() {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     className="bg-black/40 border-primary/20 focus:border-primary focus:ring-primary/20 h-14 pl-12 rounded-2xl transition-all duration-500 placeholder:text-white/10"
+                    autoComplete="username"
                   />
                 </div>
               </div>
@@ -115,6 +116,7 @@ function LoginContent() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="bg-black/40 border-primary/20 focus:border-primary focus:ring-primary/20 h-14 pl-12 rounded-2xl transition-all duration-500 placeholder:text-white/10"
+                    autoComplete="current-password"
                   />
                 </div>
               </div>

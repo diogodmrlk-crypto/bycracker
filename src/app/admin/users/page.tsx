@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState } from 'react';
@@ -6,13 +5,8 @@ import {
   Users, 
   Search, 
   UserPlus, 
-  ShieldCheck, 
-  ShieldAlert, 
   Trash2,
-  Edit2,
-  Calendar,
   Loader2,
-  X,
   Lock,
   User as UserIcon,
   AlertTriangle
@@ -67,6 +61,15 @@ export default function AdminUsers() {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUsername || !newPassword) return;
+
+    if (newPassword.length < 6) {
+      toast({
+        variant: "destructive",
+        title: "Senha Curta",
+        description: "A senha deve ter no mínimo 6 caracteres por segurança do Firebase."
+      });
+      return;
+    }
 
     setIsSubmitting(true);
     let secondaryApp;
@@ -266,7 +269,7 @@ export default function AdminUsers() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 pl-12 text-sm font-bold focus:border-primary outline-none transition-all"
-                  placeholder="••••••••"
+                  placeholder="Mínimo 6 caracteres"
                   required
                 />
               </div>
