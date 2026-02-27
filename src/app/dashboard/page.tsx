@@ -14,7 +14,8 @@ import {
   Rocket, 
   Trash2, 
   Cpu,
-  Activity
+  Activity,
+  Gamepad2
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
@@ -56,13 +57,14 @@ function DashboardContent() {
     const currentStatus = userData ? !!userData[fieldName] : false;
     const newStatus = !currentStatus;
     
+    // Non-blocking update to Firestore
     setDocumentNonBlocking(userDocRef, {
       [fieldName]: newStatus,
       username: user?.username || 'unknown',
       lastUpdate: new Date().toISOString()
     }, { merge: true });
     
-    // Pequeno delay para o usuário ver o "sucesso" antes de fechar
+    // Delay visualization for a moment after success before closing
     setTimeout(() => {
       setActiveModule(null);
     }, 100);
@@ -70,7 +72,7 @@ function DashboardContent() {
 
   const handleLogout = useCallback(() => {
     if (userDocRef) {
-      // Desativa todos os módulos antes de sair
+      // Deactivate all modules before logout
       setDocumentNonBlocking(userDocRef, {
         removerTremedeiraActive: false,
         estabilizarMiraActive: false,
@@ -213,13 +215,13 @@ function DashboardContent() {
           ))}
         </div>
 
-        {/* Extra Button */}
+        {/* Updated Action Button */}
         <div className="pt-4">
           <GlowButton 
             onClick={openFreeFire}
-            className="w-full flex items-center justify-center gap-3 py-5 text-lg rounded-3xl bg-secondary text-secondary-foreground border-none shadow-[0_0_20px_rgba(172,228,255,0.2)] hover:shadow-[0_0_30px_rgba(172,228,255,0.4)]"
+            className="w-full flex items-center justify-center gap-3 py-6 text-xl rounded-[2rem] bg-gradient-to-br from-[#1a0824] to-primary text-white border border-primary/20 shadow-[0_0_30px_rgba(196,76,255,0.2)] hover:shadow-[0_0_50px_rgba(196,76,255,0.4)] transition-all duration-500 uppercase italic tracking-widest font-black"
           >
-            <Activity className="w-6 h-6" />
+            <Gamepad2 className="w-7 h-7" />
             ABRIR FREE FIRE
           </GlowButton>
         </div>
