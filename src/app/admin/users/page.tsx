@@ -14,11 +14,12 @@ import {
   Loader2,
   X,
   Lock,
-  User as UserIcon
+  User as UserIcon,
+  AlertTriangle
 } from 'lucide-react';
 import { useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import { collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { initializeApp, deleteApp, getApp, getApps } from 'firebase/app';
+import { initializeApp, deleteApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import { firebaseConfig } from '@/firebase/config';
 import { cn } from '@/lib/utils';
@@ -60,21 +61,17 @@ export default function AdminUsers() {
     let secondaryApp;
 
     try {
-      // 1. Inicializar App secundário para criar usuário sem deslogar o admin
       const appName = `Secondary-${Date.now()}`;
       secondaryApp = initializeApp(firebaseConfig, appName);
       const secondaryAuth = getAuth(secondaryApp);
 
       const email = `${newUsername.toLowerCase()}@kizaru.ffz`;
       
-      // 2. Criar no Auth
       const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, newPassword);
       const uid = userCredential.user.uid;
 
-      // 3. Deslogar do app secundário imediatamente
       await signOut(secondaryAuth);
 
-      // 4. Criar documento no Firestore (usando o app principal do admin)
       await setDoc(doc(db, 'users', uid), {
         username: newUsername,
         role: newRole,
@@ -92,7 +89,6 @@ export default function AdminUsers() {
       setNewUsername('');
       setNewPassword('');
     } catch (error: any) {
-      console.error(error);
       toast({
         variant: "destructive",
         title: "Erro ao criar",
@@ -112,18 +108,18 @@ export default function AdminUsers() {
     });
 
     toast({
-      title: user.isActive ? "Usuário Bloqueado" : "Usuário Ativado",
+      title: user.isActive ? "Acesso Revogado" : "Acesso Restaurado",
       description: `O status de ${user.username} foi atualizado.`
     });
   };
 
   const deleteUser = (user: any) => {
-    if (confirm(`Atenção: Excluir permanentemente ${user.username}?`)) {
+    if (confirm(`Atenção: Excluir perfil de ${user.username}? (O login no sistema continuará existindo, use o botão de Bloqueio para impedir o acesso).`)) {
       const userRef = doc(db, 'users', user.id);
       deleteDocumentNonBlocking(userRef);
       toast({
-        title: "Usuário Removido",
-        description: "Documento excluído do kernel.",
+        title: "Perfil Removido",
+        description: "Documento excluído. Use o status de 'Bloqueado' para impedir novos acessos.",
         variant: "destructive"
       });
     }
@@ -205,6 +201,7 @@ export default function AdminUsers() {
                     <div className="flex items-center justify-end gap-2">
                       <button 
                         onClick={() => deleteUser(user)}
+                        title="Remover perfil do banco"
                         className="p-2 text-muted-foreground hover:text-red-400 hover:bg-red-400/10 rounded-xl transition-all"
                       >
                         <Trash2 size={16} />
@@ -224,7 +221,6 @@ export default function AdminUsers() {
         </div>
       </div>
 
-      {/* Modal Adicionar Usuário */}
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
         <DialogContent className="bg-black/90 border-primary/20 backdrop-blur-xl rounded-[2.5rem] p-8">
           <DialogHeader>

@@ -20,7 +20,6 @@ service cloud.firestore {
       allow list: if isAdmin();
       
       // Criação: Admin pode criar qualquer um. 
-      // Usuário comum só pode criar o próprio (bootstrap) se for role 'user'.
       allow create: if isAdmin() || (
         isSignedIn() && 
         request.auth.uid == userId && 
@@ -28,11 +27,12 @@ service cloud.firestore {
       );
       
       // Atualização: Admin tem controle total. 
-      // Usuário só pode atualizar o próprio se NÃO mudar o role.
+      // Usuário comum NÃO pode mudar o próprio campo isActive nem o próprio role.
       allow update: if isAdmin() || (
         isSignedIn() && 
         request.auth.uid == userId && 
-        request.resource.data.role == resource.data.role
+        request.resource.data.role == resource.data.role &&
+        request.resource.data.isActive == resource.data.isActive
       );
       
       // Deleção: Apenas Admin
