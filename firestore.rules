@@ -13,23 +13,30 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // Regra fundamental: o ID do documento DEVE ser o UID do usuário
+      // Leitura: O próprio usuário ou Admin
       allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       
-      // Permitir que o admin kizarudono crie seu próprio perfil inicialmente
-      allow create: if isSignedIn() && request.auth.uid == userId && (
-        request.resource.data.role != 'admin' || 
-        request.auth.token.email == 'kizarudono@kizaru.ffz'
+      // Listagem: Apenas Admin
+      allow list: if isAdmin();
+      
+      // Criação: Admin pode criar qualquer um. 
+      // Usuário comum só pode criar o próprio (bootstrap) se for role 'user'.
+      allow create: if isAdmin() || (
+        isSignedIn() && 
+        request.auth.uid == userId && 
+        request.resource.data.role == 'user'
       );
       
-      // Apenas o dono ou admin pode atualizar. O próprio usuário não pode mudar sua role.
-      allow update: if isSignedIn() && (
-        (request.auth.uid == userId && request.resource.data.role == resource.data.role) || 
-        isAdmin()
+      // Atualização: Admin tem controle total. 
+      // Usuário só pode atualizar o próprio se NÃO mudar o role.
+      allow update: if isAdmin() || (
+        isSignedIn() && 
+        request.auth.uid == userId && 
+        request.resource.data.role == resource.data.role
       );
       
-      // Listagem e deleção restritas a admins
-      allow list, delete: if isAdmin();
+      // Deleção: Apenas Admin
+      allow delete: if isAdmin();
     }
 
     match /system/config {
