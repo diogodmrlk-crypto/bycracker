@@ -43,18 +43,20 @@ export function TerminalOverlay({ isOpen, onComplete, isDeactivating }: Terminal
           index++;
         } else {
           clearInterval(interval);
+          // Pequeno delay antes de mostrar o status final
           setTimeout(() => {
             setIsFinished(true);
+            // Delay curto de sucesso antes de fechar automaticamente
             setTimeout(() => {
               onComplete();
-            }, 1200);
-          }, 600);
+            }, 800);
+          }, 400);
         }
-      }, 500);
+      }, 400); // Velocidade levemente aumentada para melhor UX
 
       return () => clearInterval(interval);
     }
-  }, [isOpen, isDeactivating]);
+  }, [isOpen, isDeactivating, onComplete, scripts]);
 
   if (!isOpen) return null;
 

@@ -17,7 +17,7 @@ import {
   Activity
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useFirestore, useDoc, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 
@@ -27,7 +27,7 @@ function DashboardContent() {
   const firestore = useFirestore();
   const [activeModule, setActiveModule] = useState<string | null>(null);
 
-  // Sync with Firestore
+  // Sync with Firestore using the username as the document ID
   const userDocRef = useMemoFirebase(() => {
     if (!firestore || !user?.username) return null;
     return doc(firestore, 'users', user.username);
@@ -47,16 +47,24 @@ function DashboardContent() {
   };
 
   const onAnimationComplete = () => {
-    if (!activeModule || !userDocRef || !userData) return;
+    if (!activeModule || !userDocRef) {
+      setActiveModule(null);
+      return;
+    }
     
     const fieldName = `${activeModule}Active`;
-    const currentStatus = !!userData[fieldName];
+    // If userData doesn't exist yet, we default to false (activating it)
+    const currentStatus = userData ? !!userData[fieldName] : false;
     const newStatus = !currentStatus;
     
-    updateDocumentNonBlocking(userDocRef, {
-      [fieldName]: newStatus
-    });
+    // Using setDocumentNonBlocking with merge: true ensures the doc is created if it doesn't exist
+    setDocumentNonBlocking(userDocRef, {
+      [fieldName]: newStatus,
+      username: user?.username || 'unknown',
+      lastUpdate: new Date().toISOString()
+    }, { merge: true });
     
+    // Crucially: always clear activeModule to close the TerminalOverlay
     setActiveModule(null);
   };
 
@@ -186,7 +194,7 @@ function DashboardContent() {
               icon={m.icon}
               isActive={!!userData?.[`${m.id}Active`]}
               onToggle={() => handleToggle(m.id)}
-              isLoading={isDocLoading}
+              isLoading={isDocLoading && !userData}
             />
           ))}
         </div>
