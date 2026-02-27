@@ -1,0 +1,86 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * HEADTRICK KIZARU - SECURITY RULES CONFIGURATION
+     * 
+     * CORE PHILOSOPHY:
+     * This ruleset implements a strict Private Ownership model. The security architecture 
+     * is designed for a "Premium 2.0" experience where user data and module activation 
+     * states are protected from unauthorized access or modification.
+     * 
+     * DATA STRUCTURE:
+     * All application data is organized within a flat, top-level /users collection.
+     * Each document ID corresponds exactly to the Firebase Authentication UID of the user.
+     * 
+     * KEY SECURITY DECISIONS:
+     * 1. Ownership-Based Access: Users can only read or write their own profile document.
+     * 2. No Listing: Public or authenticated listing of the /users collection is strictly 
+     *    forbidden to prevent user enumeration and data scraping.
+     * 3. Relational Integrity: The document's internal 'id' field is validated against 
+     *    the path and made immutable to ensure the integrity of the ownership link.
+     * 4. Account Status (isActive): The 'isActive' flag is used as a gatekeeper; if an 
+     *    account is deactivated, further updates to settings are prohibited.
+     * 
+     * DENORMALIZATION FOR AUTHORIZATION:
+     * Module activation states (e.g., removerTremedeiraActive, cleanActive) are stored 
+     * directly on the User document. This allows the application to load all necessary 
+     * state in a single read and secures the logic without expensive cross-document lookups.
+     */
+
+    // --- GLOBAL HELPER FUNCTIONS ---
+
+    /** @description Checks if the request is from a signed-in user. */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /** @description Checks if the authenticated user's UID matches the provided userId. */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /** @description Checks ownership and ensures the document exists for state-changing operations. */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /** @description Checks if the user's account is currently marked as active in the database. */
+    function isAccountActive() {
+      return resource.data.isActive == true;
+    }
+
+    // --- COLLECTION RULES ---
+
+    /**
+     * @description Rules for the User profile and module activation states.
+     * @path /users/{userId}
+     * @allow (get) If the request.auth.uid matches the userId in the path.
+     * @allow (create) If the user is authenticated as the userId and provides matching data.id.
+     * @deny (list) Listing users is always forbidden for security and privacy.
+     * @principle Path-based ownership and relational integrity via immutable ID.
+     */
+    match /users/{userId} {
+      
+      allow get: if isOwner(userId);
+      
+      allow list: if false;
+
+      allow create: if isOwner(userId) 
+        && request.resource.data.id == userId;
+
+      allow update: if isExistingOwner(userId) 
+        && isAccountActive() 
+        && request.resource.data.id == resource.data.id;
+
+      allow delete: if isExistingOwner(userId);
+    }
+
+    // --- DEFAULT DENY ---
+    // Explicitly deny access to any other collections not defined above.
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}
