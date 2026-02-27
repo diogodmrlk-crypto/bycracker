@@ -96,7 +96,7 @@ function LoginContent() {
             <div className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="username" className="text-[10px] uppercase tracking-widest text-primary/80 font-black ml-1">
-                  Identificação Hacker
+                  user id
                 </Label>
                 <div className="relative">
                   <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/40" />
