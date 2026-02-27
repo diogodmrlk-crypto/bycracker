@@ -43,32 +43,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setLoading(true);
+      if (!firebaseUser) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
       try {
-        if (firebaseUser) {
-          const userRef = doc(db, 'users', firebaseUser.uid);
-          const userSnap = await getDoc(userRef);
-          
-          if (userSnap.exists()) {
-            const data = userSnap.data();
-            const session: UserSession = {
-              username: data.username || 'Desconhecido',
-              role: data.role || 'user',
-              ativo: !!data.isActive,
-              uid: firebaseUser.uid
-            };
-            setUser(session);
-            localStorage.setItem('hk_session', JSON.stringify(session));
-          } else {
-            setUser(null);
-            localStorage.removeItem('hk_session');
-          }
+        const userRef = doc(db, 'users', firebaseUser.uid);
+        const userSnap = await getDoc(userRef);
+        
+        if (userSnap.exists()) {
+          const data = userSnap.data();
+          const session: UserSession = {
+            username: data.username || 'Desconhecido',
+            role: data.role || 'user',
+            ativo: !!data.isActive,
+            uid: firebaseUser.uid
+          };
+          setUser(session);
         } else {
+          // Caso o usuário exista no Auth mas não no Firestore (raro, mas possível)
           setUser(null);
-          localStorage.removeItem('hk_session');
         }
       } catch (error) {
-        console.error("Auth state observer error:", error);
+        console.error("Erro ao sincronizar sessão:", error);
         setUser(null);
       } finally {
         setLoading(false);
@@ -84,51 +83,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       let authResult;
       try {
+        // Tenta o login normal
         authResult = await signInWithEmailAndPassword(auth, email, password);
       } catch (e: any) {
-        // Bootstrap main admin
-        if ((username === 'kizarudono' && password === '171') || (username === 'kizaru' && password === '171')) {
+        // Se for o admin mestre e não existir, cria ele
+        if (username.toLowerCase() === 'kizarudono' && password === '171') {
           try {
             authResult = await createUserWithEmailAndPassword(auth, email, password);
+            // Cria o documento no Firestore IMEDIATAMENTE para evitar erro de permissão no onAuthStateChanged
             await setDoc(doc(db, 'users', authResult.user.uid), {
-              username: username,
+              username: 'kizarudono',
               role: 'admin',
               isActive: true,
               createdAt: serverTimestamp()
             });
-          } catch (createErr) {
-            return { success: false, message: 'Erro ao inicializar admin.' };
+          } catch (createErr: any) {
+            console.error("Erro no bootstrap admin:", createErr);
+            return { success: false, message: 'Erro ao inicializar sistema.' };
           }
         } else {
-          return { success: false, message: 'Credenciais inválidas ou usuário inexistente.' };
+          return { success: false, message: 'Credenciais inválidas.' };
         }
       }
 
-      const uid = authResult.user.uid;
-      const userRef = doc(db, 'users', uid);
+      // Após login/criação, verifica se o perfil existe e está ativo no Firestore
+      const userRef = doc(db, 'users', authResult.user.uid);
       const userSnap = await getDoc(userRef);
 
       if (!userSnap.exists()) {
-        return { success: false, message: 'Perfil não configurado no banco de dados.' };
+        return { success: false, message: 'Perfil não encontrado no sistema.' };
       }
 
       const userData = userSnap.data();
       if (!userData.isActive) {
         await signOut(auth);
-        return { success: false, message: 'Sua licença está desativada.' };
+        return { success: false, message: 'Esta licença foi desativada.' };
       }
 
       return { success: true, message: 'Acesso autorizado.', role: userData.role };
     } catch (error: any) {
-      console.error("Auth Error:", error);
-      return { success: false, message: 'Erro crítico na autenticação.' };
+      console.error("Login Error:", error);
+      return { success: false, message: 'Erro na comunicação com o servidor.' };
     }
   };
 
   const logout = () => {
     signOut(auth);
     setUser(null);
-    localStorage.removeItem('hk_session');
     router.push('/');
   };
 
