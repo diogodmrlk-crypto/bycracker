@@ -94,37 +94,37 @@
 .scanline {
   width: 100%;
   height: 4px;
-  background: linear-gradient(to right, transparent, hsla(285, 100%, 65%, 0.15), transparent);
+  background: linear-gradient(to right, transparent, hsla(285, 100%, 65%, 0.1), transparent);
   position: absolute;
-  animation: scanline 10s linear infinite;
+  animation: scanline 8s linear infinite;
   pointer-events: none;
   z-index: 1;
 }
 
-/* ffz Background Patterns - VISIBILIDADE AUMENTADA */
-@keyframes ffz-scroll-deep {
+/* Hacker Matrix Code Patterns */
+@keyframes code-rain-slow {
   from { background-position: 0 0; }
-  to { background-position: 400px -400px; }
+  to { background-position: 0 1000px; }
 }
 
-@keyframes ffz-scroll-front {
+@keyframes code-rain-fast {
   from { background-position: 0 0; }
-  to { background-position: 600px -600px; }
+  to { background-position: 0 1200px; }
 }
 
-.ffz-pattern-deep {
-  background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='20' y='100' font-family='monospace' font-weight='900' font-size='24' fill='rgba(196, 76, 255, 0.15)' style='filter: drop-shadow(0 0 5px rgba(196, 76, 255, 0.5))'%3Effz%3C/text%3E%3C/svg%3E");
-  animation: ffz-scroll-deep 20s linear infinite;
+.hacker-code-deep {
+  background-image: url("data:image/svg+xml,%3Csvg width='300' height='300' viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='10' y='30' font-family='monospace' font-weight='400' font-size='10' fill='rgba(196, 76, 255, 0.08)'%3Effz.exec()%3C/text%3E%3Ctext x='150' y='80' font-family='monospace' font-weight='400' font-size='10' fill='rgba(196, 76, 255, 0.05)'%3E0xFFZ%3C/text%3E%3Ctext x='40' y='140' font-family='monospace' font-weight='400' font-size='10' fill='rgba(196, 76, 255, 0.08)'%3Einit_ffz%3C/text%3E%3Ctext x='200' y='210' font-family='monospace' font-weight='400' font-size='10' fill='rgba(196, 76, 255, 0.05)'%3E[ffz_active]%3C/text%3E%3Ctext x='80' y='270' font-family='monospace' font-weight='400' font-size='10' fill='rgba(196, 76, 255, 0.08)'%3Effz_module%3C/text%3E%3C/svg%3E");
+  animation: code-rain-slow 40s linear infinite;
 }
 
-.ffz-pattern-front {
-  background-image: url("data:image/svg+xml,%3Csvg width='150' height='150' viewBox='0 0 150 150' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='40' y='60' font-family='monospace' font-weight='900' font-size='32' fill='rgba(196, 76, 255, 0.25)' style='filter: drop-shadow(0 0 8px rgba(196, 76, 255, 0.6))'%3Effz%3C/text%3E%3C/svg%3E");
-  animation: ffz-scroll-front 12s linear infinite;
+.hacker-code-front {
+  background-image: url("data:image/svg+xml,%3Csvg width='400' height='400' viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='50' y='100' font-family='monospace' font-weight='900' font-size='12' fill='rgba(196, 76, 255, 0.12)'%3Effz.run()%3C/text%3E%3Ctext x='250' y='200' font-family='monospace' font-weight='900' font-size='12' fill='rgba(196, 76, 255, 0.12)'%3E0xKIZARU%3C/text%3E%3Ctext x='100' y='350' font-family='monospace' font-weight='900' font-size='12' fill='rgba(196, 76, 255, 0.12)'%3Ekernel.ffz%3C/text%3E%3C/svg%3E");
+  animation: code-rain-fast 25s linear infinite;
 }
 
 @keyframes pulse-soft {
   0%, 100% { opacity: 0.8; transform: scale(1); }
-  50% { opacity: 0.3; transform: scale(1.1); }
+  50% { opacity: 0.3; transform: scale(1.05); }
 }
 
 .animate-pulse-soft {
