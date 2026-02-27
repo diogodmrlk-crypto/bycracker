@@ -3,11 +3,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
-  collection, 
-  query, 
-  where, 
-  getDocs, 
-  limit, 
   doc, 
   getDoc, 
   setDoc,
@@ -48,34 +43,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        // Se houver um usuário no Auth, buscamos os dados dele no Firestore pelo UID
-        const userRef = doc(db, 'users', firebaseUser.uid);
-        const userSnap = await getDoc(userRef);
-        
-        if (userSnap.exists()) {
-          const data = userSnap.data();
-          const session: UserSession = {
-            username: data.username,
-            role: data.role,
-            ativo: data.isActive,
-            uid: firebaseUser.uid
-          };
-          setUser(session);
-          localStorage.setItem('hk_session', JSON.stringify(session));
-        } else {
-          // Caso especial: Admin Bypass sem documento (vamos criar se for o caso)
-          // Mas pela regra nova, o documento DEVE existir.
-          const savedSession = localStorage.getItem('hk_session');
-          if (savedSession) {
-            setUser(JSON.parse(savedSession));
+      setLoading(true);
+      try {
+        if (firebaseUser) {
+          const userRef = doc(db, 'users', firebaseUser.uid);
+          const userSnap = await getDoc(userRef);
+          
+          if (userSnap.exists()) {
+            const data = userSnap.data();
+            const session: UserSession = {
+              username: data.username || 'Desconhecido',
+              role: data.role || 'user',
+              ativo: !!data.isActive,
+              uid: firebaseUser.uid
+            };
+            setUser(session);
+            localStorage.setItem('hk_session', JSON.stringify(session));
+          } else {
+            setUser(null);
+            localStorage.removeItem('hk_session');
           }
+        } else {
+          setUser(null);
+          localStorage.removeItem('hk_session');
         }
-      } else {
+      } catch (error) {
+        console.error("Auth state observer error:", error);
         setUser(null);
-        localStorage.removeItem('hk_session');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -85,16 +82,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const email = `${username.toLowerCase()}@kizaru.ffz`;
       
-      // Tentativa de login no Firebase Auth
       let authResult;
       try {
         authResult = await signInWithEmailAndPassword(auth, email, password);
       } catch (e: any) {
-        // Se for o admin principal e não existir, tentamos criar (Bootstrap)
+        // Bootstrap main admin
         if ((username === 'kizarudono' && password === '171') || (username === 'kizaru' && password === '171')) {
           try {
             authResult = await createUserWithEmailAndPassword(auth, email, password);
-            // Criar documento do admin no Firestore com o UID
             await setDoc(doc(db, 'users', authResult.user.uid), {
               username: username,
               role: 'admin',
@@ -133,6 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     signOut(auth);
     setUser(null);
+    localStorage.removeItem('hk_session');
     router.push('/');
   };
 

@@ -15,7 +15,8 @@ import {
   Trash2, 
   Cpu,
   Activity,
-  Gamepad2
+  Gamepad2,
+  Loader2
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
@@ -28,7 +29,7 @@ function DashboardContent() {
   const firestore = useFirestore();
   const [activeModule, setActiveModule] = useState<string | null>(null);
 
-  // CRITICAL FIX: Use user.uid instead of username to match security rules
+  // Memoize document reference based on authenticated UID
   const userDocRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
     return doc(firestore, 'users', user.uid);
@@ -36,6 +37,7 @@ function DashboardContent() {
 
   const { data: userData, isLoading: isDocLoading } = useDoc<any>(userDocRef);
 
+  // Effect for secure redirection
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/');
@@ -43,9 +45,9 @@ function DashboardContent() {
   }, [user, authLoading, router]);
 
   const handleToggle = useCallback((moduleKey: string) => {
-    if (!userDocRef) return;
+    if (!userDocRef || !userData) return;
     setActiveModule(moduleKey);
-  }, [userDocRef]);
+  }, [userDocRef, userData]);
 
   const onAnimationComplete = useCallback(() => {
     if (!activeModule || !userDocRef) {
@@ -57,7 +59,6 @@ function DashboardContent() {
     const currentStatus = userData ? !!userData[fieldName] : false;
     const newStatus = !currentStatus;
     
-    // Non-blocking update to Firestore using UID path
     setDocumentNonBlocking(userDocRef, {
       [fieldName]: newStatus,
       lastUpdate: new Date().toISOString()
@@ -90,7 +91,20 @@ function DashboardContent() {
     }, 1500);
   };
 
-  if (authLoading || !user) return null;
+  // Explicit loading state to prevent client-side exceptions
+  if (authLoading || (user && isDocLoading && !userData)) {
+    return (
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-center">
+        <HackerBackground />
+        <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
+        <p className="text-xs font-black uppercase tracking-[0.3em] text-primary/60 animate-pulse">
+          Sincronizando Kernel...
+        </p>
+      </div>
+    );
+  }
+
+  if (!user || !userData) return null;
 
   const modules = [
     { 
@@ -119,7 +133,7 @@ function DashboardContent() {
     }
   ];
 
-  const activeCount = modules.filter(m => userData?.[`${m.id}Active`]).length;
+  const activeCount = modules.filter(m => userData && userData[`${m.id}Active`]).length;
   const isEngineRunning = activeCount > 0;
 
   return (
@@ -135,7 +149,7 @@ function DashboardContent() {
             <p className="text-[10px] uppercase font-black text-primary/60 tracking-widest leading-none mb-1">
               {user.role === 'admin' ? 'Super Admin' : 'Usuário Premium'}
             </p>
-            <p className="text-sm font-bold truncate max-w-[120px]">{user.username}</p>
+            <p className="text-sm font-bold truncate max-w-[120px]">{user.username || 'Carregando...'}</p>
           </div>
         </div>
         
@@ -202,7 +216,7 @@ function DashboardContent() {
               title={m.title}
               description={m.description}
               icon={m.icon}
-              isActive={!!userData?.[`${m.id}Active`]}
+              isActive={userData ? !!userData[`${m.id}Active`] : false}
               onToggle={() => handleToggle(m.id)}
               isLoading={isDocLoading && !userData}
             />
@@ -223,7 +237,7 @@ function DashboardContent() {
       <TerminalOverlay 
         isOpen={!!activeModule} 
         onComplete={onAnimationComplete} 
-        isDeactivating={activeModule ? !!userData?.[`${activeModule}Active`] : false}
+        isDeactivating={activeModule && userData ? !!userData[`${activeModule}Active`] : false}
       />
     </div>
   );

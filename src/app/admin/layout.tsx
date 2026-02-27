@@ -14,7 +14,8 @@ import {
   LogOut,
   ShieldCheck,
   Menu,
-  X
+  X,
+  Loader2
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -31,12 +32,18 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     }
   }, [user, loading, router]);
 
-  if (loading || !user || user.role !== 'admin') {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center">
+        <HackerBackground />
+        <Loader2 className="w-10 h-10 text-primary animate-spin mb-4" />
+        <p className="text-[10px] font-black uppercase tracking-widest text-primary/60">Verificando Credenciais...</p>
       </div>
     );
+  }
+
+  if (!user || user.role !== 'admin') {
+    return null;
   }
 
   const menuItems = [
