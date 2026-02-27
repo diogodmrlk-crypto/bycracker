@@ -63,11 +63,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           };
           setUser(session);
         } else {
-          // Caso o usuário exista no Auth mas não no Firestore (raro, mas possível)
+          // Se o usuário existe no Auth mas não no Firestore, tratamos como sessão inválida para segurança
           setUser(null);
         }
       } catch (error) {
-        console.error("Erro ao sincronizar sessão:", error);
+        // Erro silencioso durante a sincronização inicial para evitar quebra de UI
         setUser(null);
       } finally {
         setLoading(false);
@@ -83,14 +83,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       let authResult;
       try {
-        // Tenta o login normal
         authResult = await signInWithEmailAndPassword(auth, email, password);
       } catch (e: any) {
-        // Se for o admin mestre e não existir, cria ele com a nova senha 052006
+        // Bootstrap do Admin Mestre (apenas para kizarudono)
         if (username.toLowerCase() === 'kizarudono' && password === '052006') {
           try {
             authResult = await createUserWithEmailAndPassword(auth, email, password);
-            // Cria o documento no Firestore IMEDIATAMENTE para evitar erro de permissão no onAuthStateChanged
+            // Criação imediata do documento no Firestore usando o UID como ID
             await setDoc(doc(db, 'users', authResult.user.uid), {
               username: 'kizarudono',
               role: 'admin',
@@ -98,32 +97,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               createdAt: serverTimestamp()
             });
           } catch (createErr: any) {
-            console.error("Erro no bootstrap admin:", createErr);
-            return { success: false, message: 'Erro ao inicializar sistema.' };
+            console.error("Erro ao inicializar admin:", createErr);
+            return { success: false, message: 'Erro ao inicializar sistema administrativo.' };
           }
         } else {
-          return { success: false, message: 'Credenciais inválidas.' };
+          return { success: false, message: 'Credenciais inválidas ou acesso negado.' };
         }
       }
 
-      // Após login/criação, verifica se o perfil existe e está ativo no Firestore
+      // Verificação final do documento no Firestore após login bem-sucedido
       const userRef = doc(db, 'users', authResult.user.uid);
       const userSnap = await getDoc(userRef);
 
       if (!userSnap.exists()) {
+        await signOut(auth);
         return { success: false, message: 'Perfil não encontrado no sistema.' };
       }
 
       const userData = userSnap.data();
       if (!userData.isActive) {
         await signOut(auth);
-        return { success: false, message: 'Esta licença foi desativada.' };
+        return { success: false, message: 'Esta conta foi desativada pelo administrador.' };
       }
 
       return { success: true, message: 'Acesso autorizado.', role: userData.role };
     } catch (error: any) {
       console.error("Login Error:", error);
-      return { success: false, message: 'Erro na comunicação com o servidor.' };
+      return { success: false, message: 'Erro de comunicação com os servidores.' };
     }
   };
 
@@ -142,6 +142,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within AuthProvider');
+  if (!context) throw new Error('useAuth deve ser usado dentro de um AuthProvider');
   return context;
 }

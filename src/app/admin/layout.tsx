@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect } from 'react';
@@ -19,7 +20,6 @@ import {
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
-// Importação dinâmica para evitar erro de hidratação
 const HackerBackground = dynamic(() => import('@/components/HackerBackground').then(mod => mod.HackerBackground), { 
   ssr: false 
 });
@@ -31,14 +31,18 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
 
   useEffect(() => {
-    if (!loading && (!user || user.role !== 'admin')) {
-      router.push('/');
+    if (!loading) {
+      if (!user) {
+        router.push('/');
+      } else if (user.role !== 'admin') {
+        router.push('/dashboard');
+      }
     }
   }, [user, loading, router]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center relative">
         <HackerBackground />
         <Loader2 className="w-10 h-10 text-primary animate-spin mb-4" />
         <p className="text-[10px] font-black uppercase tracking-widest text-primary/60">Verificando Credenciais...</p>
@@ -62,7 +66,6 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen flex text-white relative">
       <HackerBackground />
       
-      {/* Mobile Toggle */}
       <button 
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
         className="lg:hidden fixed top-6 right-6 z-[60] p-3 bg-primary rounded-2xl shadow-lg shadow-primary/20"
@@ -70,7 +73,6 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
         {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
       </button>
 
-      {/* Sidebar */}
       <aside className={cn(
         "fixed inset-y-0 left-0 z-50 w-72 bg-black/40 backdrop-blur-3xl border-r border-white/5 transition-transform duration-500 lg:translate-x-0 lg:static",
         isSidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -126,7 +128,6 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 overflow-auto relative z-10 p-6 lg:p-12">
         <div className="max-w-6xl mx-auto space-y-8">
           {children}
