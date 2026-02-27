@@ -39,7 +39,7 @@ function DashboardContent() {
     return doc(firestore, 'users', user.uid);
   }, [firestore, user?.uid]);
 
-  const { data: userData, isLoading: isDocLoading, error: docError } = useDoc<any>(userDocRef);
+  const { data: userData, isLoading: isDocLoading } = useDoc<any>(userDocRef);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -85,6 +85,31 @@ function DashboardContent() {
     logout();
   }, [userDocRef, logout]);
 
+  const handleOpenFreeFire = useCallback(() => {
+    if (typeof window === 'undefined') return;
+
+    const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+    const isAndroid = /android/i.test(userAgent);
+    const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream;
+    const isMobile = isAndroid || isIOS;
+
+    if (isMobile) {
+      // Protocolo universal para tentar abrir o app
+      const start = Date.now();
+      window.location.href = 'freefire://';
+      
+      // Fallback caso o app não esteja instalado ou não abra em 2.5s
+      setTimeout(() => {
+        if (Date.now() - start < 3000) {
+          window.location.href = 'https://ff.garena.com/pt/';
+        }
+      }, 2500);
+    } else {
+      // Desktop: Abre o site oficial em nova aba
+      window.open('https://ff.garena.com/pt/', '_blank');
+    }
+  }, []);
+
   if (authLoading || (user && isDocLoading && !userData)) {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-center">
@@ -97,7 +122,6 @@ function DashboardContent() {
     );
   }
 
-  // Se logado mas não tem documento ou está inativo
   if (user && userData && !userData.isActive) {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-center">
@@ -198,7 +222,7 @@ function DashboardContent() {
 
         <div className="pt-4">
           <GlowButton 
-            onClick={() => window.location.href = 'freefire://'}
+            onClick={handleOpenFreeFire}
             className="w-full flex items-center justify-center gap-3 py-6 text-xl rounded-[2rem] bg-gradient-to-br from-[#1a0824] to-primary text-white border border-primary/20 shadow-[0_0_30px_rgba(196,76,255,0.2)] hover:shadow-[0_0_50px_rgba(196,76,255,0.4)] transition-all duration-500 uppercase italic tracking-widest font-black"
           >
             <Gamepad2 className="w-7 h-7" />
