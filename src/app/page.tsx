@@ -78,7 +78,7 @@ function LoginContent() {
       <div className="w-full max-w-md space-y-10 relative z-10">
         <div className="text-center space-y-2">
           <h1 className="text-4xl sm:text-6xl font-black tracking-tighter italic text-primary neon-text-purple animate-glitch">
-            HEADTRICK KIZARU
+           FERRAO CRACKEANDO!!!
           </h1>
           <p className="text-primary/70 text-[10px] sm:text-xs font-black tracking-[0.5em] uppercase opacity-80">
             PERFORMANCE PREMIUM
